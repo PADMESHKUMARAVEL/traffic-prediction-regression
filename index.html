@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Control System | Smart Signal Timing</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            padding: 20px 30px 30px 30px;
+        }
+        h1 {
+            color: #1e3c72;
+            text-align: center;
+            margin-top: 0;
+            border-bottom: 3px solid #ff9800;
+            display: inline-block;
+            width: auto;
+            padding-bottom: 5px;
+        }
+        h2 {
+            color: #2a5298;
+            font-size: 1.3rem;
+            margin: 15px 0 10px 0;
+        }
+        .input-panel {
+            background: #f5f7fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .input-group {
+            flex: 1;
+            min-width: 120px;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        button {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+        button:hover {
+            background: #e68900;
+            transform: scale(1.02);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .result {
+            margin-top: 25px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        th {
+            background-color: #1e3c72;
+            color: white;
+            padding: 12px;
+            font-weight: 600;
+        }
+        td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background-color: #f1f5f9;
+        }
+        .green-time {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #2e7d32;
+            background: #e8f5e9;
+            border-radius: 20px;
+            padding: 4px 8px;
+            display: inline-block;
+        }
+        .footer {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 15px; }
+            .input-panel { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🚦 Intelligent Traffic Control System</h1>
+    <p style="text-align:center; color:#555;">Predicts vehicle counts per junction & recommends green signal times based on time, day, holiday & weather.</p>
+
+    <div class="input-panel">
+        <div class="input-group">
+            <label>⏰ Hour (0-23)</label>
+            <input type="number" id="hour" min="0" max="23" value="12" step="1">
+        </div>
+        <div class="input-group">
+            <label>📅 Day of week</label>
+            <select id="day">
+                <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+                <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>🏖️ Holiday?</label>
+            <select id="holiday">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>🌤️ Weather</label>
+            <select id="weather">
+                <option>Sunny</option><option>Rainy</option><option>Cloudy</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <button id="predictBtn">🚀 Predict Green Times</button>
+        </div>
+    </div>
+
+    <div id="result" class="result">
+        <!-- Table will appear here -->
+        <p style="text-align:center; color:#888;">Enter parameters and click "Predict Green Times"</p>
+    </div>
+    <div class="footer">
+        ⚡ ML Model: Random Forest (Car/Bike/Bus/Truck) + Passenger Car Equivalents<br>
+        Green time = 15s to 90s based on weighted load.
+    </div>
+</div>
+
+<script>
+    const predictBtn = document.getElementById('predictBtn');
+    const resultDiv = document.getElementById('result');
+
+    predictBtn.addEventListener('click', async () => {
+        const hour = parseInt(document.getElementById('hour').value);
+        const day = document.getElementById('day').value;
+        const holiday = parseInt(document.getElementById('holiday').value);
+        const weather = document.getElementById('weather').value;
+
+        // Basic validation
+        if (isNaN(hour) || hour < 0 || hour > 23) {
+            resultDiv.innerHTML = '<div class="error">❌ Hour must be between 0 and 23.</div>';
+            return;
+        }
+
+        // Show loading indicator
+        resultDiv.innerHTML = '<p style="text-align:center;">⏳ Computing green times... please wait.</p>';
+
+        try {
+            const response = await fetch('http://localhost:5000/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hour, day, holiday, weather })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Build table
+            let tableHtml = `
+                <h2>📊 Predicted Green Signal Times per Junction</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Junction</th>
+                            <th>🚗 Cars</th>
+                            <th>🚲 Bikes</th>
+                            <th>🚌 Buses</th>
+                            <th>🚛 Trucks</th>
+                            <th>⚖️ Weighted Load (PCE)</th>
+                            <th>🟢 Green Time (s)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            for (const [junction, info] of Object.entries(data)) {
+                tableHtml += `
+                    <tr>
+                        <td><strong>${junction}</strong></td>
+                        <td>${info.car}</td>
+                        <td>${info.bike}</td>
+                        <td>${info.bus}</td>
+                        <td>${info.truck}</td>
+                        <td>${info.weighted_load}</td>
+                        <td><span class="green-time">${info.green_time} s</span></td>
+                    </tr>
+                `;
+            }
+
+            tableHtml += `</tbody></table>`;
+            tableHtml += `<p style="margin-top:10px; font-size:0.85rem;">✅ Green times are for the main movement at each junction. Actual signal cycles through phases.</p>`;
+            resultDiv.innerHTML = tableHtml;
+
+        } catch (error) {
+            console.error(error);
+            resultDiv.innerHTML = `<div class="error">❌ Failed to fetch predictions. Make sure the Flask backend is running at http://localhost:5000<br>Error: ${error.message}</div>`;
+        }
+    });
+</script>
+</body>
+</html>

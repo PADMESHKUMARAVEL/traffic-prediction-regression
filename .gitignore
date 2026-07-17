@@ -1,0 +1,7 @@
+# Trained models
+*.pkl
+*.joblib
+*.h5
+*.keras
+*.pt
+*.pth
